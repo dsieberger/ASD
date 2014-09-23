@@ -29,30 +29,14 @@ main(int argc, char *argv[])
   int ask;
   ask = 1;
 
+/*
   r = lc->acquire(ask);
   printf ("acquire %d returned %d\n",ask, r);
-  r = lc->release(ask);
-  printf ("release %d returned %d\n",ask, r);
   r = lc->acquire(ask);
   printf ("acquire %d returned %d\n",ask, r);
+*/
   r = lc->release(ask);
   printf ("release %d returned %d\n",ask, r);
-  r = lc->stat(ask);
-  printf ("stat %d returned %d\n",ask, r);
-
-  ask = 2;
-
-  r = lc->acquire(ask);
-  printf ("acquire %d returned %d\n",ask, r);
-  r = lc->release(ask);
-  printf ("release %d returned %d\n",ask, r);
-  r = lc->stat(ask);
-  printf ("stat %d returned %d\n",ask, r);
-
-  ask = 1;
-
-  r = lc->stat(ask);
-  printf ("stat %d returned %d\n",ask, r);
 
 
 

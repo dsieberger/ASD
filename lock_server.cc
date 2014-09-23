@@ -67,7 +67,7 @@ lock_server::stat(int clt, lock_protocol::lockid_t lid, int &r)
 
   pthread_mutex_unlock (&mutexsum);
 
-  printf("stat request from clt %d :: status %d :: retVal %d\n", clt, ret, r);
+  printf("stat request from clt %d :: status %d :: lockID %llu :: retVal %d\n", clt, ret, lid, r);
   return ret;
 }
 
@@ -86,6 +86,7 @@ lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r)
     pthread_cond_t ct = map[lid].getCountThreshold();
     while((map[lid].getCurrentClt() != -1) /*&& (obj.getCurrentClt() != clt)*/) {
       pthread_cond_wait(&ct, &mutexsum);
+      printf("IT'S ALIVE!!!");
       //ret = lock_protocol::RETRY;
     }
 
@@ -101,10 +102,11 @@ lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r)
 
   }
 
+  r = map[lid].getCurrentClt();
+
   pthread_mutex_unlock (&mutexsum);
 
-  r = map[lid].getCurrentClt();
-  printf("acquire request from clt %d :: status %d :: retVal %d\n", clt, ret, r);
+  printf("acquire request from clt %d :: status %d :: lockID %llu :: retVal %d\n", clt, ret, lid, r);
   return ret;
 }
 
@@ -128,9 +130,10 @@ lock_server::release(int clt, lock_protocol::lockid_t lid, int &r)
     ret = lock_protocol::NOENT;
   }
 
+  r = map[lid].getCurrentClt();
+
   pthread_mutex_unlock (&mutexsum);
 
-  r = map[lid].getCurrentClt();
-  printf("release request from clt %d :: status %d :: retVal %d\n", clt, ret, r);
+  printf("release request from clt %d :: status %d :: lockID %llu :: retVal %d\n", clt, ret, lid, r);
   return ret;
 }
