@@ -33,9 +33,6 @@ main(int argc, char *argv[])
   printf ("acquire %d returned %d\n",ask, r);
   r = lc->release(ask);
   printf ("release %d returned %d\n",ask, r);
-  r = lc->stat(ask);
-  printf ("stat %d returned %d\n",ask, r);
-
   r = lc->acquire(ask);
   printf ("acquire %d returned %d\n",ask, r);
   r = lc->release(ask);
@@ -52,11 +49,11 @@ main(int argc, char *argv[])
   r = lc->stat(ask);
   printf ("stat %d returned %d\n",ask, r);
 
-  r = lc->acquire(ask);
-  printf ("acquire %d returned %d\n",ask, r);
-  r = lc->release(ask);
-  printf ("release %d returned %d\n",ask, r);
+  ask = 1;
+
   r = lc->stat(ask);
   printf ("stat %d returned %d\n",ask, r);
+
+
 
 }
