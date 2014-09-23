@@ -14,7 +14,7 @@ class lock_obj {
 protected:
 	int times_aq;
 	int current_clt;
-	pthread_cond_t count_threshold;
+	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 public:
 	lock_obj();
@@ -23,7 +23,7 @@ public:
 	void incTimesAq();
 	int getCurrentClt();
 	void setCurrentClt(int clt);
-	pthread_cond_t getCountThreshold();
+	pthread_cond_t getCond();
 
 };
 

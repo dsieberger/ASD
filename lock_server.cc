@@ -10,7 +10,6 @@ lock_obj::lock_obj()
 {
   times_aq = 0;
   current_clt = -1;
-  pthread_cond_init (&count_threshold, NULL);
 }
 
 int
@@ -38,9 +37,9 @@ lock_obj::setCurrentClt(int clt)
 }
 
 pthread_cond_t
-lock_obj::getCountThreshold()
+lock_obj::getCond()
 {
-  return count_threshold;
+  return cond;
 }
 
 
@@ -77,13 +76,12 @@ lock_protocol::status
 lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r)
 {
   lock_protocol::status ret = lock_protocol::OK;
-  r = 0;
 
   pthread_mutex_lock (&mutexsum);
 
   if(map.find(lid) != map.end()) {
 
-    pthread_cond_t ct = map[lid].getCountThreshold();
+    pthread_cond_t ct = map[lid].getCond();
     while((map[lid].getCurrentClt() != -1) /*&& (obj.getCurrentClt() != clt)*/) {
       pthread_cond_wait(&ct, &mutexsum);
       printf("IT'S ALIVE!!!");
@@ -114,7 +112,6 @@ lock_protocol::status
 lock_server::release(int clt, lock_protocol::lockid_t lid, int &r)
 {
   lock_protocol::status ret = lock_protocol::OK;
-  r = 0;
 
   pthread_mutex_lock (&mutexsum);
 
@@ -122,7 +119,7 @@ lock_server::release(int clt, lock_protocol::lockid_t lid, int &r)
 
     map[lid].setCurrentClt(-1);
 
-    pthread_cond_t ct = map[lid].getCountThreshold();
+    pthread_cond_t ct = map[lid].getCond();
 
     pthread_cond_signal(&ct);
 
