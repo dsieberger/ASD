@@ -113,7 +113,6 @@ lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r)
 
   }
 
-  pthread_cond_signal(&count_threshold);
   pthread_mutex_unlock (&mutexsum);
 
   printf("acquire request from clt %d :: %d\n", clt, ret);
@@ -140,6 +139,7 @@ lock_server::release(int clt, lock_protocol::lockid_t lid, int &r)
     ret = lock_protocol::NOENT;
   }
 
+  pthread_cond_signal(&count_threshold);
   pthread_mutex_unlock (&mutexsum);
 
   printf("release request from clt %d :: %d\n", clt, ret);
