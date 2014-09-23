@@ -62,6 +62,8 @@ lock_server::stat(int clt, lock_protocol::lockid_t lid, int &r)
   lock_protocol::status ret = lock_protocol::OK;
   r = 0;
 
+  pthread_mutex_lock (&mutexsum);
+
   if(map.find(lid) != map.end()) {
 
     lock_obj obj = map[lid];
@@ -70,6 +72,8 @@ lock_server::stat(int clt, lock_protocol::lockid_t lid, int &r)
   } else {
     ret = lock_protocol::NOENT;
   }
+
+  pthread_mutex_unlock (&mutexsum);
 
   printf("stat request from clt %d :: %d\n", clt, ret);
   return ret;
@@ -83,18 +87,21 @@ lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r)
 
   lock_protocol::status ret = lock_protocol::OK;
 
+  pthread_mutex_lock (&mutexsum);
+
   if(map.find(lid) != map.end()) {
 
     lock_obj obj = map[lid];
 
-    if(obj.status() == true) {
-      ret = lock_protocol::RETRY;
-    } else {
+    while(obj.status() == true) {
+      pthread_cond_wait(&count_threshold, &mutexsum);
+      //ret = lock_protocol::RETRY;
+    }
+
       obj.setLock(true);
       obj.setCurrentClt(clt);
       obj.incTimesAq();
       map[lid] = obj;
-    }
 
   } else {
 
@@ -105,6 +112,9 @@ lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r)
     map[lid] = *obj;  
 
   }
+
+  pthread_cond_signal(&count_threshold);
+  pthread_mutex_unlock (&mutexsum);
 
   printf("acquire request from clt %d :: %d\n", clt, ret);
   r = 0;
@@ -117,6 +127,8 @@ lock_server::release(int clt, lock_protocol::lockid_t lid, int &r)
 
   lock_protocol::status ret = lock_protocol::OK;
 
+  pthread_mutex_lock (&mutexsum);
+
   if(map.find(lid) != map.end()) {
 
     lock_obj obj = map[lid];
@@ -127,6 +139,8 @@ lock_server::release(int clt, lock_protocol::lockid_t lid, int &r)
   } else {
     ret = lock_protocol::NOENT;
   }
+
+  pthread_mutex_unlock (&mutexsum);
 
   printf("release request from clt %d :: %d\n", clt, ret);
   r = 0;
