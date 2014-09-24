@@ -11,25 +11,24 @@
 
 class lock_obj {
 
-protected:
-	int times_aq;
-	int current_clt;
+public:
+	int client;
+	int nacquire;
 	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 public:
-	lock_obj();
-	~lock_obj() {};
-	int getTimesAq();
-	void incTimesAq();
-	int getCurrentClt();
-	void setCurrentClt(int clt);
-	pthread_cond_t getCond();
+	lock_obj()
+	{
+		client = -1;
+		nacquire = 0;
+	}
 
 };
 
 class lock_server {
 
  protected:
+  int nacquire;
   pthread_mutex_t mutexsum;
   std::map<lock_protocol::lockid_t,lock_obj> map;
 

@@ -26,18 +26,22 @@ main(int argc, char *argv[])
   dst = argv[1];
   lc = new lock_client(dst);
 
-  int ask;
-  ask = 1;
+  r = lc->acquire(1);
+  printf ("acquire 1 returned %d\n", r);
+  r = lc->release(1);
+  printf ("release 1 returned %d\n", r);
+  r = lc->acquire(1);
+  printf ("acquire 1 returned %d\n", r);
+  r = lc->release(1);
+  printf ("release 1 returned %d\n", r);
+  r = lc->stat(1);
+  printf ("stat 1 returned %d\n", r);
 
-
-  r = lc->acquire(ask);
-  printf ("acquire %d returned %d\n",ask, r);
-  r = lc->acquire(ask);
-  printf ("acquire %d returned %d\n",ask, r);
-/*
-  r = lc->release(ask);
-  printf ("release %d returned %d\n",ask, r);
-*/
-
+  r = lc->acquire(2);
+  printf ("acquire 2 returned %d\n", r);
+  r = lc->release(2);
+  printf ("release 2 returned %d\n", r);
+  r = lc->stat(2);
+  printf ("stat 2 returned %d\n", r);
 
 }
