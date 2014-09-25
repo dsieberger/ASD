@@ -26,6 +26,8 @@ main(int argc, char *argv[])
   dst = argv[1];
   lc = new lock_client(dst);
 
+  //Just some tests to check well functioning of the map
+
   r = lc->acquire(1);
   printf ("acquire 1 returned %d\n", r);
   r = lc->release(1);
