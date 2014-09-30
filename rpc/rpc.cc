@@ -160,7 +160,7 @@ rpcc::bind(TO to)
 int
 rpcc::call1(unsigned int proc, marshall &req, unmarshall &rep,
 		TO to)
-{
+{ 
 
 	caller ca(0, &rep);
 	{
@@ -279,11 +279,11 @@ rpcc::get_refconn(connection **ch)
 bool
 rpcc::got_pdu(connection *c, char *b, int sz)
 {
-	unmarshall rep(b, sz);
-	reply_header h;
-	rep.unpack_reply_header(&h);
+	unmarshall rep(b, sz);				//unmarshall message from server
+	reply_header h;					
+	rep.unpack_reply_header(&h);		//unpack header to 'reply_header' object
 
-	if(!rep.ok()) {
+	if(!rep.ok()) {						//if message error code...
 		jsl_log(JSL_DBG_1, "rpcc:got_pdu unmarshall header failed!!!\n");
 		return true;
 	}
@@ -318,23 +318,23 @@ rpcc::update_xid_rep(unsigned int xid)
 {
 	std::list<unsigned int>::iterator it;
 
-	if (xid <= xid_rep_window_.front()) {
-		return;
+	if (xid <= xid_rep_window_.front()) {	//if xid function parameter is less than the front of RPCs floating window xid
+		return;								//(for each RPC invoked, de xid from the client increments. This implies that the xid increments for each client unique RPC)
 	}
 
-	for (it = xid_rep_window_.begin(); it != xid_rep_window_.end(); it++) {
-		if (*it > xid) {
-			xid_rep_window_.insert(it, xid);
-			goto compress;
+	for (it = xid_rep_window_.begin(); it != xid_rep_window_.end(); it++) { //iterate the client RPC floating window
+		if (*it > xid) {													//if RPC xid is lower than some other RPC still in the floating window,
+			xid_rep_window_.insert(it, xid);								//then keep it and reorder it in window to correct position
+			goto compress;													//ordering complete, proceed forward...
 		}
 	}
-	xid_rep_window_.push_back(xid);
-
+	xid_rep_window_.push_back(xid);											//xid greater than all others, means it's the newest RPC yet
+																			//goes to the back of the floating window
 compress:
-	it = xid_rep_window_.begin();
-	for (it++; it != xid_rep_window_.end(); it++) {
-		while (xid_rep_window_.front() + 1 == *it)
-			xid_rep_window_.pop_front();
+	it = xid_rep_window_.begin();											//iterate floating window
+	for (it++; it != xid_rep_window_.end(); it++) {							
+		while (xid_rep_window_.front() + 1 == *it)							//while 2 same RPCs are in the front of the window
+			xid_rep_window_.pop_front();									//discard one of them
 	}
 }
 
@@ -558,10 +558,27 @@ rpcs::dispatch(djob_t *j)
 }
 
 void
-rpcs::add_reply(unsigned int clt_nonce, unsigned int xid,
+rpcs::add_reply(unsigned int clt_nonce, unsigned int xid,												//a implementar!!!
 		char *b, int sz)
 {
 	ScopedLock rwl(&reply_window_m_);
+
+	std::list<reply_t> *client_reply_window = &reply_window_[clt_nonce];
+	std::list<reply_t>::iterator it;
+
+	for(it = client_reply_window->begin(); it != client_reply_window->end(); it++)		//percorrer linearmente a janela deslizante
+	{																					//até encontrar o primeiro reply_t com xid procurado
+		if((*it).xid == xid)															//actualizar dados da estrutura para indicar que
+		{		
+			reply_t *response = new	reply_t(xid);															//o "dispatch" da tarefa terminou e colocar os
+			response->cb_present = true;													//dados no buffer dentro da janela, actualizar o tamanho
+			response->sz = sz;																//e indicar 'cb_present = true' para saber que a tarefa concluiu
+			response->buf = b;
+			*it = *response;
+			//printf("add_reply xid: %d\t%d\n", xid, clt_nonce);
+			break;
+		}
+	}
 }
 
 void
@@ -582,11 +599,61 @@ rpcs::free_reply_window(void)
 
 rpcs::rpcstate_t 
 rpcs::checkduplicate_and_update(unsigned int clt_nonce, unsigned int xid,
-		unsigned int xid_rep, char **b, int *sz)
+		unsigned int xid_rep, char **b, int *sz)								
 {
 	ScopedLock rwl(&reply_window_m_);
 
-	return NEW;
+	std::list<reply_t> *client_reply_window = &reply_window_[clt_nonce];
+	std::list<reply_t>::iterator it;
+	rpcstate_t xid_state;
+
+	
+	std::list<reply_t>::iterator i;
+	//printf("{");
+	for( i = client_reply_window->begin(); i != client_reply_window->end(); ++i){
+		//printf(" [%d]", i->xid);
+	}
+	//printf(" } ======> ");
+	
+	
+
+	//find status of rpc
+	if(xid < client_reply_window->front().xid)
+		xid_state = FORGOTTEN;
+
+	for(it = client_reply_window->begin(); it != client_reply_window->end(); it++)					//se a lista estiver vazia?
+	{
+		if((*it).xid > xid) {
+			client_reply_window->insert(it, reply_t(xid));				//inserir antes ou depois?
+			it++;
+			xid_state = NEW;
+			break;
+		}
+		if((*it).xid == xid) {
+			if((*it).cb_present) {
+				*b = (*it).buf;
+				*sz = (*it).sz;
+				xid_state = DONE;
+				break;
+			} else {
+				xid_state = INPROGRESS;
+				break;
+			}
+		}
+	}
+
+	if(!xid_state || client_reply_window->empty()) {
+		client_reply_window->push_back(reply_t(xid));
+		xid_state = NEW;
+	}
+
+	//update window (remove already confirmed xid)
+	while(client_reply_window->front().xid < xid_rep)
+		client_reply_window->pop_front();
+
+	//printf("xid_state: %d -> [new_xid: %d]\tclient: %d\n", xid_state, xid, clt_nonce);
+	return xid_state;
+	
 }
 
 //rpc handler

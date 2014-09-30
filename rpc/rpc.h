@@ -240,7 +240,7 @@ class handler {
 class rpcs : public chanmgr {
 
 	typedef enum {
-		NEW,  // new RPC, not a duplicate
+		NEW = 1,  // new RPC, not a duplicate
 		INPROGRESS, // duplicate of an RPC we're still processing
 		DONE, // duplicate of an RPC we already replied to (have reply)
 		FORGOTTEN,  // duplicate of an old RPC whose reply we've forgotten

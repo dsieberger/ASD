@@ -9,20 +9,18 @@
 #include "lock_client.h"
 #include "rpc.h"
 
-//Class lock_obj, represents a lock
 class lock_obj {
 
 public:
-	int client;  	//Current client holding the lock. If -1, lock is free, else is locked
-	int nacquire; 	//Number of times the lock was given to a client
-	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;	//Condition variable of the lock, so threads can wait and wake up
+	int client;
+	int nacquire;
+	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 public:
-	//Constructor
 	lock_obj()
 	{
-		client = -1;	//No clients, lock free
-		nacquire = 0;	//No clients obtained the lock yet
+		client = -1;
+		nacquire = 0;
 	}
 
 };
@@ -30,14 +28,13 @@ public:
 class lock_server {
 
  protected:
-  int nacquire;					//Just a value of return
-  pthread_mutex_t mutexsum;		//Mutex to control the threads
-  std::map<lock_protocol::lockid_t,lock_obj> map;	//Map where each lockID has a lock_obj
+  int nacquire;
+  pthread_mutex_t mutexsum;
+  std::map<lock_protocol::lockid_t,lock_obj> map;
 
  public:
   lock_server();
   ~lock_server() {};
-  //RPC methods
   lock_protocol::status stat(int clt, lock_protocol::lockid_t lid, int &);
   lock_protocol::status acquire(int clt, lock_protocol::lockid_t lid, int &);
   lock_protocol::status release(int clt, lock_protocol::lockid_t lid, int &);
