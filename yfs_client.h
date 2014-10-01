@@ -7,7 +7,7 @@
 #include <vector>
 
 
-  class yfs_client {
+class yfs_client {
   extent_client *ec;
  public:
 

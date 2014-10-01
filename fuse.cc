@@ -122,7 +122,7 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
 }
 
 yfs_client::status
-fuseserver_createhelper(fuse_ino_t parent, const char *name,
+fuseserver_createhelper(fuse_ino_t parent, const char *name,            // ---------------- IMPLEMENT HERE LAB2 ------------------- //
      mode_t mode, struct fuse_entry_param *e)
 {
   // You fill this in
@@ -152,7 +152,7 @@ void fuseserver_mknod( fuse_req_t req, fuse_ino_t parent,
 }
 
 void
-fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
+fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ---------------- IMPLEMENT HERE LAB2 ------------------- //
 {
   struct fuse_entry_param e;
   bool found = false;
@@ -200,7 +200,7 @@ int reply_buf_limited(fuse_req_t req, const char *buf, size_t bufsize,
 }
 
 void
-fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
+fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,			// ---------------- IMPLEMENT HERE LAB2 ------------------- //
           off_t off, struct fuse_file_info *fi)
 {
   yfs_client::inum inum = ino; // req->in.h.nodeid;
