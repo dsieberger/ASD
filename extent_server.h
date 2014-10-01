@@ -12,10 +12,10 @@ class file_obj {
 public:
 	std::string file;
 	int file_size;
-    time_t file_atime;
-    time_t file_mtime;
-    time_t file_ctime;
-    bool valid;
+  time_t file_atime;
+  time_t file_mtime;
+  time_t file_ctime;
+  bool valid;
 
 public:
 	file_obj(){
@@ -36,6 +36,7 @@ protected:
   int get(extent_protocol::extentid_t id, std::string &);
   int getattr(extent_protocol::extentid_t id, extent_protocol::attr &);
   int remove(extent_protocol::extentid_t id, int &);
+
 };
 
 #endif 

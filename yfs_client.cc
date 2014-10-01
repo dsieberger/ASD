@@ -88,9 +88,27 @@ yfs_client::getdir(inum inum, dirinfo &din)
   din.ctime = a.ctime;
 
  release:
- 
+
   return r;
 }
 
+int
+yfs_client::newfile(inum inum) 
+{
+  int r = OK;
+
+  printf("newfile %016llx\n", inum);
+
+  if(ec->put(inum, "") != extent_protocol::OK) {
+    r = IOERR;
+    goto release;
+  }
+
+  printf("newfile %016llx  OK\n", inum);
+
+  release:
+
+  return r;
+}
 
 

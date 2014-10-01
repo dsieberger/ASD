@@ -18,6 +18,9 @@
 #include <arpa/inet.h>
 #include "yfs_client.h"
 
+#include <ctime> // Needed for the true randomization
+#include <cstdlib>
+
 int myid;
 yfs_client *yfs;
 
@@ -126,7 +129,22 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
      mode_t mode, struct fuse_entry_param *e)
 {
   // You fill this in
-  return yfs_client::NOENT;
+
+	int xRan;
+	srand(time(0)); // This will ensure a really randomized number by help of time.
+	
+	xRan=rand()%99999999+1;
+
+	e->ino = 0x00000001;				//inum
+	e->generation = 0x00000001;		//unique number
+	//e->attr ??				//no clue?
+	e->attr_timeout = 0.0;	//self-explanatory
+	e->entry_timeout = 0.0;	//self-explanatory
+
+	yfs->newfile(0x00000001);
+	printf("HELLO!!!");
+
+	return  yfs_client::OK;
 }
 
 void
@@ -164,6 +182,19 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   // Look up the file named `name' in the directory referred to by
   // `parent' in YFS. If the file was found, initialize e.ino and
   // e.attr appropriately.
+
+
+  yfs_client::status ret;
+  yfs_client::fileinfo fi;
+
+  ret = yfs->getfile(0x00000001, fi);
+  if(ret == yfs_client::OK){
+  	found = true;
+  	e.ino = 0x00000001;
+  	e.generation = 0x00000001;
+  	//e.attr ??
+  }
+
 
   if (found)
     fuse_reply_entry(req, &e);
