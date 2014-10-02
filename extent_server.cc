@@ -8,7 +8,22 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-extent_server::extent_server() {}
+extent_server::extent_server() {
+
+	file_obj *obj = new file_obj();
+
+	time_t now;
+	time(&now);
+
+	obj->file = "";
+	obj->attr.atime = now;
+	obj->attr.ctime = now;
+	obj->attr.mtime = now;
+	obj->attr.size = 0;
+	obj->valid = true;
+
+	map[0x00000001] = *obj;
+}
 
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 {

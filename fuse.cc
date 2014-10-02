@@ -145,13 +145,15 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 	time_t now;
 	time(&now);
 
-	extent_protocol::attr newattr;
-	newattr.mtime = now;
-	newattr.ctime = now;
-	newattr.atime = now;
-	newattr.size = 0;
+	struct stat st;
+  st.st_mode = S_IFREG | 0666;
+  st.st_nlink = 1;
+  st.st_atime = now;
+  st.st_mtime = now;
+  st.st_ctime = now;
+  st.st_size = 0;
 
-	e->attr = newattr;          //error! maybe we need to use fuseserver_setattr ???
+	e->attr = st;          //error! maybe we need to use fuseserver_setattr ???
 
 	yfs->newfile(0x00000001);
 	printf("HELLO DEBUG PRINT!!!"); //not printed, why?
@@ -212,13 +214,15 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
     time_t now;
     time(&now);
 
-    extent_protocol::attr newattr;
-    newattr.mtime = now;
-    newattr.ctime = now;
-    newattr.atime = now;
-    newattr.size = 0;
+    struct stat st;
+    st.st_mode = S_IFREG | 0666;
+    st.st_nlink = 1;
+    st.st_atime = now;
+    st.st_mtime = now;
+    st.st_ctime = now;
+    st.st_size = 0;
 
-    e.attr = newattr;           //error! maybe we need to use fuseserver_setattr ???
+    e.attr = st;           //error! maybe we need to use fuseserver_setattr ???
   }
 
   //////////////////// END //////////////////////////////
