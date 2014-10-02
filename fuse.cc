@@ -18,9 +18,6 @@
 #include <arpa/inet.h>
 #include "yfs_client.h"
 
-#include <ctime> // Needed for the true randomization
-#include <cstdlib>
-
 int myid;
 yfs_client *yfs;
 
@@ -89,11 +86,24 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set
     printf("   fuseserver_setattr set size to %zu\n", attr->st_size);
     struct stat st;
     // You fill this in
+
+    ////////////////// BEGIN //////////////////////////
+/*
+    st.st_mode = S_IFREG | 0666;
+    st.st_nlink = 1;
+    st.st_atime = 1;
+    st.st_mtime = 1;
+    st.st_ctime = 1;
+    st.st_size = attr->st_size;
+*/
+    ////////////////// END //////////////////////////
+
 #if 0
     fuse_reply_attr(req, &st, 0);
 #else
     fuse_reply_err(req, ENOSYS);
 #endif
+
   } else {
     fuse_reply_err(req, ENOSYS);
   }
@@ -132,13 +142,16 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 
 	//////////////////// BEGIN //////////////////////////////
 
-	int xRan;
-	srand(time(0)); // This will ensure a really randomized number by help of time.
-	
-	xRan=rand()%99999999+1;
+  int randnum = rand();
+  if(yfs->isfile(randnum)){
+    randnum = randnum | 0x80000000;
+  }
+  else{
+    randnum = randnum & 0x7FFFFFFF;
+  }
 
-	e->ino = 0x00000001;				//inum
-	e->generation = 0x00000001;	//unique number
+	e->ino = randnum;				    //inum
+	e->generation = randnum;	  //unique number
 	e->attr_timeout = 0.0;	    //self-explanatory
 	e->entry_timeout = 0.0;	    //self-explanatory
 
@@ -146,17 +159,11 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 	time(&now);
 
 	struct stat st;
-  st.st_mode = S_IFREG | 0666;
-  st.st_nlink = 1;
-  st.st_atime = now;
-  st.st_mtime = now;
-  st.st_ctime = now;
-  st.st_size = 0;
+  getattr(randnum, st);
 
-	e->attr = st;          //error! maybe we need to use fuseserver_setattr ???
+	e->attr = st;
 
-	yfs->newfile(0x00000001);
-	printf("HELLO DEBUG PRINT!!!"); //not printed, why?
+	yfs->newfile(parent,randnum,name);
 
 	return  yfs_client::OK;
 
@@ -203,26 +210,20 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   //////////////////// BEGIN //////////////////////////////
 
   yfs_client::status ret;
-  yfs_client::fileinfo fi;
 
-  ret = yfs->getfile(0x00000001, fi);
-  if(ret == yfs_client::OK){
+  ret = yfs->ilookup(parent, name);
+  if(ret != -1){
   	found = true;
-  	e.ino = 0x00000001;
-  	e.generation = 0x00000001;
+  	e.ino = ret;
+  	e.generation = ret;
 
     time_t now;
     time(&now);
 
     struct stat st;
-    st.st_mode = S_IFREG | 0666;
-    st.st_nlink = 1;
-    st.st_atime = now;
-    st.st_mtime = now;
-    st.st_ctime = now;
-    st.st_size = 0;
+    getattr(ret, st);
 
-    e.attr = st;           //error! maybe we need to use fuseserver_setattr ???
+    e.attr = st;
   }
 
   //////////////////// END //////////////////////////////
@@ -278,7 +279,14 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,			// -----------
   memset(&b, 0, sizeof(b));
 
 
-   // fill in the b data structure using dirbuf_add
+    // fill in the b data structure using dirbuf_add
+
+    std::map<yfs_client::inum, std::string> map = yfs->listdir(ino);
+
+    for (std::map<yfs_client::inum, std::string>::iterator it = map.begin(); it!=map.end(); it++) {
+      std::string name = it->second;
+      dirbuf_add(&b, name.c_str(), it->first);
+    }
 
 
    reply_buf_limited(req, b.p, b.size, off, size);
@@ -291,7 +299,7 @@ fuseserver_open(fuse_req_t req, fuse_ino_t ino,
      struct fuse_file_info *fi)
 {
   // You fill this in
-#if 0
+#if 1 //changed to 1 to pass tests
   fuse_reply_open(req, fi);
 #else
   fuse_reply_err(req, ENOSYS);

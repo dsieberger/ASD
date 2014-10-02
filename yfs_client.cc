@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cstring>
 
 
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)
@@ -93,16 +94,25 @@ yfs_client::getdir(inum inum, dirinfo &din)
 }
 
 int
-yfs_client::newfile(inum inum) 
+yfs_client::newfile(inum parent_id, inum inum, std::string name) 
 {
   int r = OK;
 
   printf("newfile %016llx\n", inum);
+  std::string s = "name-" + name;
 
-  if(ec->put(inum, "") != extent_protocol::OK) {
-    r = IOERR;
-    goto release;
+  s += "-parent-" + filename(parent_id);
+
+  std::string res;
+  if(ec->get(parent_id, res) != extent_protocol::OK) {
+    ec->put(parent_id, res + "-child-" + filename(inum));
   }
+
+  if(ec->put(inum, s) != extent_protocol::OK) {
+     r = IOERR;
+     goto release;
+  }
+  
 
   printf("newfile %016llx  OK\n", inum);
 
@@ -111,4 +121,142 @@ yfs_client::newfile(inum inum)
   return r;
 }
 
+yfs_client::inum
+yfs_client::ilookup(inum parent_id, std::string name) {
 
+
+  std::string res;
+  ec->get(parent_id, res);
+
+  char array [res.length()];
+  for(int i = 0; i < res.length(); i++) {
+    array[i] = res[i];
+  }
+
+  char * tokens;
+  bool next = false;
+
+  tokens = strtok (array,"-");
+  while (tokens != NULL) {
+
+    std::string tok;
+    tok = tokens;
+
+    if(tok.compare("child") == 0) {
+      next = true;
+    }
+
+    if(next) {
+      next = false;
+
+      std::string comeback;
+      ec->get(n2i(tok), comeback);
+
+      char a [comeback.length()];
+      for(int b = 0; b < comeback.length(); b++) {
+        a[b] = comeback[b];
+      }
+
+      char * tokensc;
+      bool nextc = false;
+
+      tokensc = strtok (a,"-");
+      while (tokensc != NULL) {     
+
+        std::string tkn;
+        tkn = tokensc;
+
+        if(tkn.compare("name") == 0) {
+          nextc = true;
+        }
+
+        if(nextc) {
+          nextc = false;
+          if(tkn.compare(name) == 0) {
+            return n2i(tok);
+          }
+        }
+
+        tokensc = strtok (NULL,"-");
+
+      } 
+
+    }
+
+    tokens = strtok (NULL,"-");
+
+  }
+
+  return -1;
+
+}
+
+
+std::map<yfs_client::inum, std::string>
+yfs_client::listdir(inum num) {
+
+  std::map<yfs_client::inum, std::string> map;
+
+  std::string res;
+  ec->get(num, res);
+
+  char array [res.length()];
+  for(int i = 0; i < res.length(); i++) {
+    array[i] = res[i];
+  }
+
+  char * tokens;
+  bool next = false;
+
+  tokens = strtok (array,"-");
+  while (tokens != NULL) {
+
+    std::string tok;
+    tok = tokens;
+
+    if(tok.compare("child") == 0) {
+      next = true;
+    }
+
+    if(next) {
+      next = false;
+
+      std::string comeback;
+      ec->get(n2i(tok), comeback);
+
+      char a [comeback.length()];
+      for(int b = 0; b < comeback.length(); b++) {
+        a[b] = comeback[b];
+      }
+
+      char * tokensc;
+      bool nextc = false;
+
+      tokensc = strtok (a,"-");
+      while (tokensc != NULL) {     
+
+        std::string tkn;
+        tkn = tokensc;
+
+        if(tkn.compare("name") == 0) {
+          nextc = true;
+        }
+
+        if(nextc) {
+          nextc = false;
+          map[n2i(tok)] = tkn;
+        }
+
+        tokensc = strtok (NULL,"-");
+
+      } 
+
+    }
+
+    tokens = strtok (NULL,"-");
+
+  }
+
+  return map;
+
+}

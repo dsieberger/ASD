@@ -15,10 +15,10 @@ extent_server::extent_server() {
 	time_t now;
 	time(&now);
 
-	obj->file = "";
-	obj->attr.atime = now;
-	obj->attr.ctime = now;
-	obj->attr.mtime = now;
+	obj->file = "name-root";
+	obj->attr.atime = 1;
+	obj->attr.ctime = 1;
+	obj->attr.mtime = 1;
 	obj->attr.size = 0;
 	obj->valid = true;
 
@@ -38,7 +38,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 			time(&now);
 
 			map[id].file = buf;
-			map[id].attr.mtime = now;
+			map[id].attr.mtime = 1;
 
 		} else {
 
@@ -48,10 +48,10 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 			time(&now);
 
 			obj->file = buf;
-			obj->attr.atime = now;
-			obj->attr.ctime = now;
-			obj->attr.mtime = now;
-			obj->attr.size = buf.length();
+			obj->attr.atime = 1;
+			obj->attr.ctime = 1;
+			obj->attr.mtime = 1;
+			obj->attr.size = 0;
 			obj->valid = true;
 
 			map[id] = *obj;
@@ -66,10 +66,10 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 		time(&now);
 
 		obj->file = buf;
-		obj->attr.atime = now;
-		obj->attr.ctime = now;
-		obj->attr.mtime = now;
-		obj->attr.size = buf.length();
+		obj->attr.atime = 1;
+		obj->attr.ctime = 1;
+		obj->attr.mtime = 1;
+		obj->attr.size = 0;
 		obj->valid = true;
 
 		map[id] = *obj;
@@ -77,6 +77,8 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 	}
 
 	retval = extent_protocol::OK;
+
+	printf("put request for file %lld -> %d\n", id, retval);
 
 	return retval;
 
@@ -95,7 +97,7 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 			time(&now);
 
 			buf = map[id].file;
-			map[id].attr.atime = now;
+			map[id].attr.atime = 1;
 
 			retval = extent_protocol::OK;
 
@@ -106,6 +108,8 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 	} else {
 		retval = extent_protocol::NOENT;
 	}
+
+	printf("get request for file %lld -> %d\n", id, retval);
 
   	return retval;
 
@@ -136,13 +140,15 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
 
 	retval = extent_protocol::OK;
 
+	printf("getattr request for file %lld -> %d\n", id, retval);
+
   	return retval;
 
 }
 
 int extent_server::remove(extent_protocol::extentid_t id, int &)
 {
-  
+
 	int retval;
 
 	if(map.find(id) != map.end()) {
@@ -160,6 +166,8 @@ int extent_server::remove(extent_protocol::extentid_t id, int &)
 	} else {
 		retval = extent_protocol::NOENT;
 	}
+
+	printf("remove request for file %lld -> %d\n", id, retval);
 
   	return retval;
 
