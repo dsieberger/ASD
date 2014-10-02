@@ -130,6 +130,8 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 {
   // You fill this in
 
+	//////////////////// BEGIN //////////////////////////////
+
 	int xRan;
 	srand(time(0)); // This will ensure a really randomized number by help of time.
 	
@@ -140,21 +142,24 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 	e->attr_timeout = 0.0;	    //self-explanatory
 	e->entry_timeout = 0.0;	    //self-explanatory
 
-  time_t now;
-  time(&now);
+	time_t now;
+	time(&now);
 
-  extent_protocol::attr newattr;
-  newattr.mtime = now;
-  newattr.ctime = now;
-  newattr.atime = now;
-  newattr.size = 0;
+	extent_protocol::attr newattr;
+	newattr.mtime = now;
+	newattr.ctime = now;
+	newattr.atime = now;
+	newattr.size = 0;
 
-  e->attr = newattr;          //error! maybe we need to use fuseserver_setattr ???
+	e->attr = newattr;          //error! maybe we need to use fuseserver_setattr ???
 
 	yfs->newfile(0x00000001);
 	printf("HELLO DEBUG PRINT!!!"); //not printed, why?
 
 	return  yfs_client::OK;
+
+	//////////////////// END //////////////////////////////
+
 }
 
 void
@@ -193,6 +198,8 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   // `parent' in YFS. If the file was found, initialize e.ino and
   // e.attr appropriately.
 
+  //////////////////// BEGIN //////////////////////////////
+
   yfs_client::status ret;
   yfs_client::fileinfo fi;
 
@@ -213,6 +220,8 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
 
     e.attr = newattr;           //error! maybe we need to use fuseserver_setattr ???
   }
+
+  //////////////////// END //////////////////////////////
 
   if (found)
     fuse_reply_entry(req, &e);
