@@ -136,13 +136,23 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 	xRan=rand()%99999999+1;
 
 	e->ino = 0x00000001;				//inum
-	e->generation = 0x00000001;		//unique number
-	//e->attr ??				//no clue?
-	e->attr_timeout = 0.0;	//self-explanatory
-	e->entry_timeout = 0.0;	//self-explanatory
+	e->generation = 0x00000001;	//unique number
+	e->attr_timeout = 0.0;	    //self-explanatory
+	e->entry_timeout = 0.0;	    //self-explanatory
+
+  time_t now;
+  time(&now);
+
+  extent_protocol::attr newattr;
+  newattr.mtime = now;
+  newattr.ctime = now;
+  newattr.atime = now;
+  newattr.size = 0;
+
+  e->attr = newattr;          //error! maybe we need to use fuseserver_setattr ???
 
 	yfs->newfile(0x00000001);
-	printf("HELLO!!!");
+	printf("HELLO DEBUG PRINT!!!"); //not printed, why?
 
 	return  yfs_client::OK;
 }
@@ -183,7 +193,6 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   // `parent' in YFS. If the file was found, initialize e.ino and
   // e.attr appropriately.
 
-
   yfs_client::status ret;
   yfs_client::fileinfo fi;
 
@@ -192,16 +201,24 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   	found = true;
   	e.ino = 0x00000001;
   	e.generation = 0x00000001;
-  	//e.attr ??
-  }
 
+    time_t now;
+    time(&now);
+
+    extent_protocol::attr newattr;
+    newattr.mtime = now;
+    newattr.ctime = now;
+    newattr.atime = now;
+    newattr.size = 0;
+
+    e.attr = newattr;           //error! maybe we need to use fuseserver_setattr ???
+  }
 
   if (found)
     fuse_reply_entry(req, &e);
   else
     fuse_reply_err(req, ENOENT);
 }
-
 
 struct dirbuf {
     char *p;

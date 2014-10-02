@@ -44,6 +44,7 @@ class yfs_client {
 
   int getfile(inum, fileinfo &);
   int getdir(inum, dirinfo &);
+  
   int newfile(inum);
 
 };

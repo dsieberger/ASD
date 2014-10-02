@@ -11,11 +11,8 @@ class file_obj {
 
 public:
 	std::string file;
-	int file_size;
-  time_t file_atime;
-  time_t file_mtime;
-  time_t file_ctime;
-  bool valid;
+	extent_protocol::attr attr;
+  	bool valid;
 
 public:
 	file_obj(){
