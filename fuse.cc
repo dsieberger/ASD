@@ -131,13 +131,15 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 
 	//////////////////// BEGIN //////////////////////////////
 
-  int randnum = rand();
-  if(yfs->isfile(randnum)){
-    randnum = randnum | 0x80000000;
-  }
-  else{
-    randnum = randnum & 0x7FFFFFFF;
-  }
+  printf("fuseserver_createhelper\n");
+
+  unsigned long long randnum = (unsigned long long)random();
+  //if(yfs->isfile(randnum)){
+    //randnum = randnum | 0x80000000;
+  //}
+  //else{
+    //randnum = randnum & 0x7FFFFFFF;
+  //}
 
 	e->ino = randnum;				    //inum
 	//e->generation = randnum;	  //unique number
@@ -147,16 +149,13 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 	time_t now;
 	time(&now);
 
-	struct stat st;
   //getattr(randnum, st);
-  st.st_mode = S_IFREG | 0666;
-  st.st_nlink = 1;
-  st.st_atime = 1;
-  st.st_mtime = 1;
-  st.st_ctime = 1;
-  st.st_size = 0;
-
-	e->attr = st;
+  e->attr.st_mode = mode;
+  e->attr.st_nlink = 1;
+  e->attr.st_atime = 1;
+  e->attr.st_mtime = 1;
+  e->attr.st_ctime = 1;
+  e->attr.st_size = 0;
 
 	yfs->newfile(parent,randnum,name);
 
@@ -203,6 +202,8 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   // e.attr appropriately.
 
   //////////////////// BEGIN //////////////////////////////
+
+  printf("fuseserver_lookup\n");
 
   yfs_client::status ret;
 
@@ -262,7 +263,6 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,			// -----------
 {
   yfs_client::inum inum = ino; // req->in.h.nodeid;
   struct dirbuf b;
-  yfs_client::dirent e;
 
   printf("fuseserver_readdir\n");
 
@@ -276,7 +276,7 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,			// -----------
 
     // fill in the b data structure using dirbuf_add
 
-    std::map<yfs_client::inum, std::string> map = yfs->listdir(ino);
+    std::map<yfs_client::inum, std::string> map = yfs->listdir(inum);
 
     for (std::map<yfs_client::inum, std::string>::iterator it = map.begin(); it!=map.end(); it++) {
       std::string name = it->second;
@@ -294,7 +294,7 @@ fuseserver_open(fuse_req_t req, fuse_ino_t ino,
      struct fuse_file_info *fi)
 {
   // You fill this in
-#if 1 //changed to 1 to pass tests
+#if 0
   fuse_reply_open(req, fi);
 #else
   fuse_reply_err(req, ENOSYS);

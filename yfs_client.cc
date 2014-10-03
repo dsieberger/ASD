@@ -99,13 +99,13 @@ yfs_client::newfile(inum parent_id, inum inum, std::string name)
   int r = OK;
 
   printf("newfile %016llx\n", inum);
-  std::string s = "name|" + name;
+  std::string s = "name\n" + name;
 
-  s += "|parent|" + filename(parent_id);
+  s += "\nparent\n" + filename(parent_id);
 
   std::string res;
   if(ec->get(parent_id, res) == extent_protocol::OK) {
-    if(ec->put(parent_id, res + "|child|" + filename(inum)) != extent_protocol::OK) {
+    if(ec->put(parent_id, res + "\nchild\n" + filename(inum)) != extent_protocol::OK) {
     	r = IOERR; printf("newfile child put IOERR\n");
     	goto release;
     }
@@ -143,7 +143,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
   char * tokens;
   bool next = false;
 
-  tokens = strtok (array,"|");
+  tokens = strtok (array,"\n");
   while (tokens != NULL) {
 
     std::string tok;
@@ -153,7 +153,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
       next = true;
     }
 
-    if(next) {
+    else if(next) {
       next = false;
 
       std::string comeback;
@@ -167,7 +167,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
       char * tokensc;
       bool nextc = false;
 
-      tokensc = strtok (a,"|");
+      tokensc = strtok (a,"\n");
       while (tokensc != NULL) {     
 
         std::string tkn;
@@ -177,7 +177,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
           nextc = true;
         }
 
-        if(nextc) {
+        else if(nextc) {
           nextc = false;
           if(tkn.compare(name) == 0) {
           	printf("ilookup FOUND!\n");
@@ -185,13 +185,13 @@ yfs_client::ilookup(inum parent_id, std::string name) {
           }
         }
 
-        tokensc = strtok (NULL,"|");
+        tokensc = strtok (NULL,"\n");
 
       } 
 
     }
 
-    tokens = strtok (NULL,"|");
+    tokens = strtok (NULL,"\n");
 
   }
 
@@ -208,6 +208,7 @@ yfs_client::listdir(inum num) {
 	printf("listdir called to list dir %lld\n", num);
 
   std::map<yfs_client::inum, std::string> map;
+  std::list<yfs_client::inum> list;
 
   std::string res;
   ec->get(num, res);
@@ -220,7 +221,7 @@ yfs_client::listdir(inum num) {
   char * tokens;
   bool next = false;
 
-  tokens = strtok (array,"-");
+  tokens = strtok (array,"\n");
   while (tokens != NULL) {
 
     std::string tok;
@@ -230,50 +231,58 @@ yfs_client::listdir(inum num) {
       next = true;
     }
 
-    if(next) {
+    else if(next) {
       next = false;
-
-      std::string comeback;
-      ec->get(n2i(tok), comeback);
-
-      char a [comeback.length()];
-      for(int b = 0; b < comeback.length(); b++) {
-        a[b] = comeback[b];
-      }
-
-      char * tokensc;
-      bool nextc = false;
-
-      tokensc = strtok (a,"-");
-      while (tokensc != NULL) {     
-
-        std::string tkn;
-        tkn = tokensc;
-
-        if(tkn.compare("name") == 0) {
-          nextc = true;
-        }
-
-        if(nextc) {
-          nextc = false;
-          map[n2i(tok)] = tkn;
-        }
-
-        tokensc = strtok (NULL,"-");
-
-      } 
-
+      list.push_front(n2i(tok));
     }
 
-    tokens = strtok (NULL,"-");
+    tokens = strtok (NULL,"\n");
 
   }
+
+  ////////////////////////
+  printf("----------------------\n");
+
+  	for(std::list<yfs_client::inum>::iterator iter = list.begin(); iter != list.end(); iter++) {
+
+	  	  std::string comeback;
+	      ec->get(*iter, comeback);
+
+	      char a [comeback.length()];
+	      for(int b = 0; b < comeback.length(); b++) {
+	        a[b] = comeback[b];
+	      }
+
+	      char * tokensc;
+	      bool nextc = false;
+
+	      tokensc = strtok (a,"\n");
+	      while (tokensc != NULL) {     
+
+	        std::string tkn;
+	        tkn = tokensc;
+
+	        if(tkn.compare("name") == 0) {
+	          nextc = true;
+	        }
+
+	        else if(nextc) {
+	          nextc = false;
+	          map[*iter] = tkn;
+	        }
+
+	        tokensc = strtok (NULL,"\n");
+
+	      }
+
+    }
 
   printf("listdir res:\n");
   for (std::map<yfs_client::inum, std::string>::iterator it = map.begin(); it!=map.end(); it++) {
       std::string name = it->second;
       printf("%lld - %s\n", it->first, name.c_str());
   }
+  printf("----------------------\n");
 
   return map;
 

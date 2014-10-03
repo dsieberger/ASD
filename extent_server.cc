@@ -15,7 +15,7 @@ extent_server::extent_server() {
 	time_t now;
 	time(&now);
 
-	obj->file = "name|root";
+	obj->file = "name\nroot";
 	obj->attr.atime = 1;
 	obj->attr.ctime = 1;
 	obj->attr.mtime = 1;
@@ -23,6 +23,7 @@ extent_server::extent_server() {
 	obj->valid = true;
 
 	map[0x00000001] = *obj;
+	
 }
 
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
@@ -38,7 +39,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 
 		if(map[id].valid) {
 
-			printf("-- actualized: %s\n", buf.c_str());
+			printf("-- actualized:\n %s\n", buf.c_str());
 
 			time_t now;
 			time(&now);
@@ -49,7 +50,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 		} else {
 
 			printf("-- not valid\n");
-			printf("-- created new: %s\n", buf.c_str());
+			printf("-- created new:\n %s\n", buf.c_str());
 
 			file_obj *obj = new file_obj();
 
@@ -71,7 +72,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 
 		printf("-- not found\n");
 
-		printf("-- created new: %s\n", buf.c_str());
+		printf("-- created new:\n %s\n", buf.c_str());
 
 		file_obj *obj = new file_obj();
 
@@ -108,7 +109,7 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 
 		if(map[id].valid) {
 
-			printf("-- returned: %s\n", map[id].file.c_str());
+			printf("-- returned:\n %s\n", map[id].file.c_str());
 
 			time_t now;
 			time(&now);
