@@ -57,7 +57,7 @@ yfs_client::getfile(inum inum, fileinfo &fin)
   printf("getfile %016llx\n", inum);
   extent_protocol::attr a;
   if (ec->getattr(inum, a) != extent_protocol::OK) {
-    r = IOERR;
+    r = IOERR; printf("getfile IOERR\n");
     goto release;
   }
 
@@ -81,7 +81,7 @@ yfs_client::getdir(inum inum, dirinfo &din)
   printf("getdir %016llx\n", inum);
   extent_protocol::attr a;
   if (ec->getattr(inum, a) != extent_protocol::OK) {
-    r = IOERR;
+    r = IOERR; printf("getdir IOERR\n");
     goto release;
   }
   din.atime = a.atime;
@@ -104,12 +104,18 @@ yfs_client::newfile(inum parent_id, inum inum, std::string name)
   s += "-parent-" + filename(parent_id);
 
   std::string res;
-  if(ec->get(parent_id, res) != extent_protocol::OK) {
-    ec->put(parent_id, res + "-child-" + filename(inum));
+  if(ec->get(parent_id, res) == extent_protocol::OK) {
+    if(ec->put(parent_id, res + "-child-" + filename(inum)) != extent_protocol::OK) {
+    	r = IOERR; printf("newfile child put IOERR\n");
+    	goto release;
+    }
+  } else {
+  	r = IOERR; printf("newfile parent get IOERR\n");
+    goto release;
   }
 
   if(ec->put(inum, s) != extent_protocol::OK) {
-     r = IOERR;
+     r = IOERR; printf("newfile child put IOERR\n");
      goto release;
   }
   
