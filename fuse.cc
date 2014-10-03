@@ -87,17 +87,6 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set
     struct stat st;
     // You fill this in
 
-    ////////////////// BEGIN //////////////////////////
-/*
-    st.st_mode = S_IFREG | 0666;
-    st.st_nlink = 1;
-    st.st_atime = 1;
-    st.st_mtime = 1;
-    st.st_ctime = 1;
-    st.st_size = attr->st_size;
-*/
-    ////////////////// END //////////////////////////
-
 #if 0
     fuse_reply_attr(req, &st, 0);
 #else
@@ -151,7 +140,7 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
   }
 
 	e->ino = randnum;				    //inum
-	e->generation = randnum;	  //unique number
+	//e->generation = randnum;	  //unique number
 	e->attr_timeout = 0.0;	    //self-explanatory
 	e->entry_timeout = 0.0;	    //self-explanatory
 
@@ -159,7 +148,13 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 	time(&now);
 
 	struct stat st;
-  getattr(randnum, st);
+  //getattr(randnum, st);
+  st.st_mode = S_IFREG | 0666;
+  st.st_nlink = 1;
+  st.st_atime = 1;
+  st.st_mtime = 1;
+  st.st_ctime = 1;
+  st.st_size = 0;
 
 	e->attr = st;
 
@@ -215,7 +210,7 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   if(ret != -1){
   	found = true;
   	e.ino = ret;
-  	e.generation = ret;
+  	//e.generation = ret;
 
     time_t now;
     time(&now);

@@ -15,7 +15,7 @@ extent_server::extent_server() {
 	time_t now;
 	time(&now);
 
-	obj->file = "name-root";
+	obj->file = "name|root";
 	obj->attr.atime = 1;
 	obj->attr.ctime = 1;
 	obj->attr.mtime = 1;
@@ -28,11 +28,17 @@ extent_server::extent_server() {
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 {
 
+	printf("put request for file %lld\n", id);
+
 	int retval;
 
 	if(map.find(id) != map.end()) {
 
+		printf("-- found\n");
+
 		if(map[id].valid) {
+
+			printf("-- actualized: %s\n", buf.c_str());
 
 			time_t now;
 			time(&now);
@@ -41,6 +47,9 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 			map[id].attr.mtime = 1;
 
 		} else {
+
+			printf("-- not valid\n");
+			printf("-- created new: %s\n", buf.c_str());
 
 			file_obj *obj = new file_obj();
 
@@ -60,6 +69,10 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 
 	} else {
 
+		printf("-- not found\n");
+
+		printf("-- created new: %s\n", buf.c_str());
+
 		file_obj *obj = new file_obj();
 
 		time_t now;
@@ -78,8 +91,6 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 
 	retval = extent_protocol::OK;
 
-	printf("put request for file %lld -> %d\n", id, retval);
-
 	return retval;
 
 }
@@ -87,29 +98,38 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 {
 
+	printf("get request for file %lld\n", id);
+
 	int retval;
 
 	if(map.find(id) != map.end()) {
 
+		printf("-- found\n");
+
 		if(map[id].valid) {
+
+			printf("-- returned: %s\n", map[id].file.c_str());
 
 			time_t now;
 			time(&now);
 
-			buf = map[id].file;
+			buf = map[id].file.c_str();
 			map[id].attr.atime = 1;
 
 			retval = extent_protocol::OK;
 
 		} else {
+			printf("-- not valid\n");
+
 			retval = extent_protocol::NOENT;
 		}
 
 	} else {
+
+		printf("-- not found\n");
+
 		retval = extent_protocol::NOENT;
 	}
-
-	printf("get request for file %lld -> %d\n", id, retval);
 
   	return retval;
 
@@ -117,6 +137,8 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 
 int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr &a)
 {
+
+	printf("getattr request for file %lld\n", id);
 
 	int retval;
 
@@ -127,20 +149,28 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
 
 	if(map.find(id) != map.end()) {
 
+		printf("-- found\n");
+
 		if(map[id].valid) {
+
+			printf("-- valid\n");
 
 			a.size = map[id].attr.size;
 	  		a.atime = map[id].attr.atime;
 	  		a.mtime = map[id].attr.mtime;
 	  		a.ctime = map[id].attr.ctime;
 
+	  		retval = extent_protocol::OK;
+
+		} else {
+			printf("-- not valid\n");
+			retval = extent_protocol::NOENT;
 		}
 
+	} else {
+		printf("-- not found\n");
+		retval = extent_protocol::NOENT;
 	}
-
-	retval = extent_protocol::OK;
-
-	printf("getattr request for file %lld -> %d\n", id, retval);
 
   	return retval;
 
@@ -149,25 +179,31 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
 int extent_server::remove(extent_protocol::extentid_t id, int &)
 {
 
+	printf("remove request for file %lld\n", id);
+
 	int retval;
 
 	if(map.find(id) != map.end()) {
 
+		printf("-- found\n");
+
 		if(map[id].valid) {
+
+			printf("-- valid\n");
 
 			map[id].valid = false;
 
 			retval = extent_protocol::OK;
 
 		} else {
+			printf("-- not valid\n");
 			retval = extent_protocol::NOENT;
 		}
 
 	} else {
+		printf("-- not found\n");
 		retval = extent_protocol::NOENT;
 	}
-
-	printf("remove request for file %lld -> %d\n", id, retval);
 
   	return retval;
 

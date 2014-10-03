@@ -99,13 +99,13 @@ yfs_client::newfile(inum parent_id, inum inum, std::string name)
   int r = OK;
 
   printf("newfile %016llx\n", inum);
-  std::string s = "name-" + name;
+  std::string s = "name|" + name;
 
-  s += "-parent-" + filename(parent_id);
+  s += "|parent|" + filename(parent_id);
 
   std::string res;
   if(ec->get(parent_id, res) == extent_protocol::OK) {
-    if(ec->put(parent_id, res + "-child-" + filename(inum)) != extent_protocol::OK) {
+    if(ec->put(parent_id, res + "|child|" + filename(inum)) != extent_protocol::OK) {
     	r = IOERR; printf("newfile child put IOERR\n");
     	goto release;
     }
@@ -143,7 +143,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
   char * tokens;
   bool next = false;
 
-  tokens = strtok (array,"-");
+  tokens = strtok (array,"|");
   while (tokens != NULL) {
 
     std::string tok;
@@ -167,7 +167,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
       char * tokensc;
       bool nextc = false;
 
-      tokensc = strtok (a,"-");
+      tokensc = strtok (a,"|");
       while (tokensc != NULL) {     
 
         std::string tkn;
@@ -185,13 +185,13 @@ yfs_client::ilookup(inum parent_id, std::string name) {
           }
         }
 
-        tokensc = strtok (NULL,"-");
+        tokensc = strtok (NULL,"|");
 
       } 
 
     }
 
-    tokens = strtok (NULL,"-");
+    tokens = strtok (NULL,"|");
 
   }
 
