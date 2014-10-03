@@ -130,6 +130,7 @@ yfs_client::newfile(inum parent_id, inum inum, std::string name)
 yfs_client::inum
 yfs_client::ilookup(inum parent_id, std::string name) {
 
+	printf("ilookup called searching for %s in %lld\n", name.c_str(), parent_id);
 
   std::string res;
   ec->get(parent_id, res);
@@ -179,6 +180,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
         if(nextc) {
           nextc = false;
           if(tkn.compare(name) == 0) {
+          	printf("ilookup FOUND!\n");
             return n2i(tok);
           }
         }
@@ -193,6 +195,8 @@ yfs_client::ilookup(inum parent_id, std::string name) {
 
   }
 
+  printf("ilookup NOT FOUND!\n");
+
   return -1;
 
 }
@@ -200,6 +204,8 @@ yfs_client::ilookup(inum parent_id, std::string name) {
 
 std::map<yfs_client::inum, std::string>
 yfs_client::listdir(inum num) {
+
+	printf("listdir called to list dir %lld\n", num);
 
   std::map<yfs_client::inum, std::string> map;
 
@@ -261,6 +267,12 @@ yfs_client::listdir(inum num) {
 
     tokens = strtok (NULL,"-");
 
+  }
+
+  printf("listdir res:\n");
+  for (std::map<yfs_client::inum, std::string>::iterator it = map.begin(); it!=map.end(); it++) {
+      std::string name = it->second;
+      printf("%lld - %s\n", it->first, name.c_str());
   }
 
   return map;
