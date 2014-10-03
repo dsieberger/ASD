@@ -132,6 +132,7 @@ yfs_client::ilookup(inum parent_id, std::string name) {
 
 	printf("ilookup called searching for %s in %lld\n", name.c_str(), parent_id);
 
+	std::list<yfs_client::inum> list;
   std::string res;
   ec->get(parent_id, res);
 
@@ -155,45 +156,52 @@ yfs_client::ilookup(inum parent_id, std::string name) {
 
     else if(next) {
       next = false;
-
-      std::string comeback;
-      ec->get(n2i(tok), comeback);
-
-      char a [comeback.length()];
-      for(int b = 0; b < comeback.length(); b++) {
-        a[b] = comeback[b];
-      }
-
-      char * tokensc;
-      bool nextc = false;
-
-      tokensc = strtok (a,"\n");
-      while (tokensc != NULL) {     
-
-        std::string tkn;
-        tkn = tokensc;
-
-        if(tkn.compare("name") == 0) {
-          nextc = true;
-        }
-
-        else if(nextc) {
-          nextc = false;
-          if(tkn.compare(name) == 0) {
-          	printf("ilookup FOUND!\n");
-            return n2i(tok);
-          }
-        }
-
-        tokensc = strtok (NULL,"\n");
-
-      } 
+      list.push_front(n2i(tok));
 
     }
 
     tokens = strtok (NULL,"\n");
 
   }
+
+
+	for(std::list<yfs_client::inum>::iterator iter = list.begin(); iter != list.end(); iter++) {
+
+		  	std::string comeback;
+		      ec->get(*iter, comeback);
+
+		      char a [comeback.length()];
+		      for(int b = 0; b < comeback.length(); b++) {
+		        a[b] = comeback[b];
+		      }
+
+		      char * tokensc;
+		      bool nextc = false;
+
+		      tokensc = strtok (a,"\n");
+		      while (tokensc != NULL) {     
+
+		        std::string tkn;
+		        tkn = tokensc;
+
+		        if(tkn.compare("name") == 0) {
+		          nextc = true;
+		        }
+
+		        else if(nextc) {
+		          nextc = false;
+		          if(tkn.compare(name) == 0) {
+		          	printf("ilookup FOUND!\n");
+		            return *iter;
+		          }
+		        }
+
+		        tokensc = strtok (NULL,"\n");
+
+		      }
+
+   } 
+
 
   printf("ilookup NOT FOUND!\n");
 
