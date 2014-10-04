@@ -133,33 +133,31 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 
   printf("fuseserver_createhelper\n");
 
-  unsigned long long randnum = (unsigned long long)random();
-  //if(yfs->isfile(randnum)){
-    //randnum = randnum | 0x80000000;
-  //}
-  //else{
-    //randnum = randnum & 0x7FFFFFFF;
-  //}
+  int randnum = rand();
+  randnum = randnum & 0x00000000FFFFFFFF;
+  randnum = randnum | 0x80000000;
+  printf("RANDNUM %lld\n",randnum);
+
+  yfs_client::status ret = yfs->newfile(parent,randnum,name);
 
 	e->ino = randnum;				    //inum
-	//e->generation = randnum;	  //unique number
+	e->generation = 1;	  		//unique number
 	e->attr_timeout = 0.0;	    //self-explanatory
 	e->entry_timeout = 0.0;	    //self-explanatory
 
 	time_t now;
 	time(&now);
 
-  //getattr(randnum, st);
-  e->attr.st_mode = mode;
-  e->attr.st_nlink = 1;
-  e->attr.st_atime = 1;
-  e->attr.st_mtime = 1;
-  e->attr.st_ctime = 1;
-  e->attr.st_size = 0;
+	getattr(randnum, e->attr);
 
-	yfs->newfile(parent,randnum,name);
+//  e->attr.st_mode = mode;
+//  e->attr.st_nlink = 1;
+//  e->attr.st_atime = now;
+//  e->attr.st_mtime = now;
+//  e->attr.st_ctime = now;
+//  e->attr.st_size = 0;
 
-	return  yfs_client::OK;
+	return ret;
 
 	//////////////////// END //////////////////////////////
 
@@ -211,10 +209,7 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
   if(ret != -1){
   	found = true;
   	e.ino = ret;
-  	//e.generation = ret;
-
-    time_t now;
-    time(&now);
+  	e.generation = 1;
 
     struct stat st;
     getattr(ret, st);
@@ -294,7 +289,7 @@ fuseserver_open(fuse_req_t req, fuse_ino_t ino,
      struct fuse_file_info *fi)
 {
   // You fill this in
-#if 0
+#if 1
   fuse_reply_open(req, fi);
 #else
   fuse_reply_err(req, ENOSYS);

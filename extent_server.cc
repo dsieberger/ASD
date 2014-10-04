@@ -16,10 +16,10 @@ extent_server::extent_server() {
 	time(&now);
 
 	obj->file = "name\nroot";
-	obj->attr.atime = 1;
-	obj->attr.ctime = 1;
-	obj->attr.mtime = 1;
-	obj->attr.size = 0;
+	obj->attr.atime = now;
+	obj->attr.ctime = now;
+	obj->attr.mtime = now;
+	obj->attr.size = now;
 	obj->valid = true;
 
 	map[0x00000001] = *obj;
@@ -45,7 +45,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 			time(&now);
 
 			map[id].file = buf;
-			map[id].attr.mtime = 1;
+			map[id].attr.mtime = now;
 
 		} else {
 
@@ -58,10 +58,10 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 			time(&now);
 
 			obj->file = buf;
-			obj->attr.atime = 1;
-			obj->attr.ctime = 1;
-			obj->attr.mtime = 1;
-			obj->attr.size = 0;
+			obj->attr.atime = now;
+			obj->attr.ctime = now;
+			obj->attr.mtime = now;
+			obj->attr.size = now;
 			obj->valid = true;
 
 			map[id] = *obj;
@@ -80,9 +80,9 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 		time(&now);
 
 		obj->file = buf;
-		obj->attr.atime = 1;
-		obj->attr.ctime = 1;
-		obj->attr.mtime = 1;
+		obj->attr.atime = now;
+		obj->attr.ctime = now;
+		obj->attr.mtime = now;
 		obj->attr.size = 0;
 		obj->valid = true;
 
@@ -115,7 +115,7 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 			time(&now);
 
 			buf = map[id].file.c_str();
-			map[id].attr.atime = 1;
+			map[id].attr.atime = now;
 
 			retval = extent_protocol::OK;
 
