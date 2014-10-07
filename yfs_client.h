@@ -48,6 +48,8 @@ class yfs_client {
   int newfile(inum, inum, std::string);
   std::map<inum, std::string> listdir(inum inum);
 
+  int setSize(inum, int);
+
 };
 
 #endif 

@@ -210,3 +210,36 @@ int extent_server::remove(extent_protocol::extentid_t id, int &)
 
 }
 
+int extent_server::setSize(extent_protocol::extentid_t id, int newSize, int &)
+{
+
+	printf("changeSize request for file %lld\n", id);
+
+	int retval;
+
+	if(map.find(id) != map.end()) {
+
+		printf("-- found\n");
+
+		if(map[id].valid) {
+
+			printf("-- valid\n");
+
+			map[id].attr.size = newSize;
+
+			retval = extent_protocol::OK;
+
+		} else {
+			printf("-- not valid\n");
+			retval = extent_protocol::NOENT;
+		}
+
+	} else {
+		printf("-- not found\n");
+		retval = extent_protocol::NOENT;
+	}
+
+  	return retval;
+
+}
+

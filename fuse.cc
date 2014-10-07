@@ -85,9 +85,13 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set
   if (FUSE_SET_ATTR_SIZE & to_set) {
     printf("   fuseserver_setattr set size to %zu\n", attr->st_size);
     struct stat st;
+
     // You fill this in
 
-#if 0
+    yfs->setSize(ino, attr->st_size);
+    getattr(ino, st);
+
+#if 1
     fuse_reply_attr(req, &st, 0);
 #else
     fuse_reply_err(req, ENOSYS);
@@ -124,12 +128,9 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
 }
 
 yfs_client::status
-fuseserver_createhelper(fuse_ino_t parent, const char *name,            // ---------------- IMPLEMENT HERE LAB2 ------------------- //
+fuseserver_createhelper(fuse_ino_t parent, const char *name,
      mode_t mode, struct fuse_entry_param *e)
 {
-  // You fill this in
-
-	//////////////////// BEGIN //////////////////////////////
 
   printf("fuseserver_createhelper\n");
 
@@ -140,7 +141,7 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 
   yfs_client::status ret = yfs->newfile(parent,randnum,name);
 
-	e->ino = randnum;				    //inum
+	e->ino = randnum;			//inum
 	e->generation = 1;	  		//unique number
 	e->attr_timeout = 0.0;	    //self-explanatory
 	e->entry_timeout = 0.0;	    //self-explanatory
@@ -150,16 +151,7 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,            // -----
 
 	getattr(randnum, e->attr);
 
-//  e->attr.st_mode = mode;
-//  e->attr.st_nlink = 1;
-//  e->attr.st_atime = now;
-//  e->attr.st_mtime = now;
-//  e->attr.st_ctime = now;
-//  e->attr.st_size = 0;
-
 	return ret;
-
-	//////////////////// END //////////////////////////////
 
 }
 
@@ -186,20 +178,13 @@ void fuseserver_mknod( fuse_req_t req, fuse_ino_t parent,
 }
 
 void
-fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ---------------- IMPLEMENT HERE LAB2 ------------------- //
+fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
   struct fuse_entry_param e;
   bool found = false;
 
   e.attr_timeout = 0.0;
   e.entry_timeout = 0.0;
-
-  // You fill this in:
-  // Look up the file named `name' in the directory referred to by
-  // `parent' in YFS. If the file was found, initialize e.ino and
-  // e.attr appropriately.
-
-  //////////////////// BEGIN //////////////////////////////
 
   printf("fuseserver_lookup\n");
 
@@ -216,8 +201,6 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)	// ------
 
     e.attr = st;
   }
-
-  //////////////////// END //////////////////////////////
 
   if (found)
     fuse_reply_entry(req, &e);
@@ -253,7 +236,7 @@ int reply_buf_limited(fuse_req_t req, const char *buf, size_t bufsize,
 }
 
 void
-fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,			// ---------------- IMPLEMENT HERE LAB2 ------------------- //
+fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
           off_t off, struct fuse_file_info *fi)
 {
   yfs_client::inum inum = ino; // req->in.h.nodeid;
@@ -268,16 +251,12 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,			// -----------
 
   memset(&b, 0, sizeof(b));
 
-
-    // fill in the b data structure using dirbuf_add
-
     std::map<yfs_client::inum, std::string> map = yfs->listdir(inum);
 
     for (std::map<yfs_client::inum, std::string>::iterator it = map.begin(); it!=map.end(); it++) {
       std::string name = it->second;
       dirbuf_add(&b, name.c_str(), it->first);
     }
-
 
    reply_buf_limited(req, b.p, b.size, off, size);
    free(b.p);

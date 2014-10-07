@@ -94,6 +94,20 @@ yfs_client::getdir(inum inum, dirinfo &din)
 }
 
 int
+yfs_client::setSize(inum id, int newSize)
+{
+
+  int r = OK;
+
+  if(ec->setSize(id, newSize) != extent_protocol::OK) {
+    r = IOERR; printf("changeSize ERROR");
+  }
+
+  return r;
+
+}
+
+int
 yfs_client::newfile(inum parent_id, inum inum, std::string name) 
 {
   int r = OK;
