@@ -44,6 +44,11 @@ class yfs_client {
 
   int getfile(inum, fileinfo &);
   int getdir(inum, dirinfo &);
+
+  //<david>
+  int file_content(inum, std::string &);
+  int modify_file(inum, std::string);
+  //</david>
   
   int newfile(inum, inum, std::string);
   std::map<inum, std::string> listdir(inum inum);

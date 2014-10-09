@@ -47,6 +47,11 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 			map[id].file = buf;
 			map[id].attr.mtime = now;
 
+			//<david>
+			//também se muda o tamanho
+			//map[id].attr.size = buf.size();
+			//</david>
+
 		} else {
 
 			printf("-- not valid\n");

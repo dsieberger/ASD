@@ -6,6 +6,8 @@
  * high-level interface only gives us complete paths.
  */
 
+//penis
+
 #include <fuse_lowlevel.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,40 +80,109 @@ fuseserver_getattr(fuse_req_t req, fuse_ino_t ino,
     fuse_reply_attr(req, &st, 0);
 }
 
+/**
+  A alteração dos atributos é feita apenas para o atributo 'size' (como enunciado especifica, os outros são facultativos).
+  Essencialmente foram criados duas novas funções no 'yfs_client': file_content() e modify_file().
+  A primeira função permite aceder ao conteúdo da string associado a um inum no extent server, que seja um ficheiro.
+  A segunda função faz "overwrite" da string que está no extent server associada a um inum (que seja ficheiro também) com outra passada por parâmetro.
+  A alteração do atributo 'size' é tratada a nível do extent server, que vê qual é o comprimento da string passada por parâmetro e actualiza automaticamente.
+  O que esta função setattr() faz, é simplesmente aceder à string no extent server, encurta-a ou aumenta-a (dado o 'size') e volta a guardar no extent server.
+*/
 void
 fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi)
 {
   printf("fuseserver_setattr 0x%x\n", to_set);
   if (FUSE_SET_ATTR_SIZE & to_set) {
-    printf("   fuseserver_setattr set size to %zu\n", attr->st_size);
+    printf("   fuseserver_setattr set size to %zu\n", attr->st_size);/*
+
+    struct stat st;   //não usar isto ou o 'fuse_file_info' para nada faz algum mal?
+    st.st_size = attr->st_size;
+    
+    //<david>
+    //se o ficheiro for maior que o novo tamanho, encurtar a entrada 'extent' no extent server
+    //se o ficheiro for menor, inserir padding
+    //se o ficheiro for de igual tamanho, não fazer nada
+    //a função 'put()' do extent server já lida com alterar automaticamente o tamanho da string em attr
+
+    int size_difference;
+    std::string file_data;
+    yfs_client::status ret = yfs->file_content(ino, file_data);
+
+    if(ret != yfs_client::OK)
+    {
+
+      size_difference = attr->st_size - file_data.size();
+
+      if(size_difference > 0)
+        while(size_difference > 0)
+        {
+          file_data.append(" ");
+          size_difference--;
+        }
+      else if(size_difference < 0)
+        file_data = file_data.substr(0, attr->st_size);
+
+
+      yfs->modify_file(ino, file_data);
+      
+      fuse_reply_attr(req, fi, 0);
+    }
+    else
+      fuse_reply_err(req, ENOSYS); 
+      */
     struct stat st;
 
     // You fill this in
 
-    yfs->setSize(ino, attr->st_size);
-    getattr(ino, st);
-
-#if 1
-    fuse_reply_attr(req, &st, 0);
-#else
-    fuse_reply_err(req, ENOSYS);
-#endif
+    if(yfs->isfile(ino))
+    {
+      yfs->setSize(ino, attr->st_size);
+      getattr(ino, st);
+      printf("O 'setattr' executa aqui...\n");
+      fuse_reply_attr(req, &st, 0);
+    }
+    else
+    {
+      printf("O 'setattr' executa aqui se não for ficheiro...\n");
+      fuse_reply_err(req, ENOSYS);
+    }
 
   } else {
+    printf("O 'setattr' executa aqui se estiver tudo mal...\n");
     fuse_reply_err(req, ENOSYS);
   }
+  //<david>
+
 }
 
 void
 fuseserver_read(fuse_req_t req, fuse_ino_t ino, size_t size,
-      off_t off, struct fuse_file_info *fi)
+      off_t off, struct fuse_file_info *fi)   //nem usei o fuse_file_info, faz mal?
 {
   // You fill this in
-#if 0
-  fuse_reply_buf(req, buf, size);
-#else
-  fuse_reply_err(req, ENOSYS);
-#endif
+
+  //<david>
+  if(yfs->isfile(ino))
+  {
+    std::string file_data;
+    yfs->file_content(ino, file_data);
+
+    if(off + size > file_data.size())
+    {
+      printf("off: %d\nsize: %d\nfile_data_size: %d\n", off, size, file_data.size());
+      std::string content = file_data;
+      for(int i = file_data.size(); i < off + size; i++)
+        content += "\0";
+      fuse_reply_buf(req, content.c_str(), strlen(content.c_str()));
+    }
+    else if(off + size < file_data.size())
+    {
+      file_data = file_data.substr(off, size);
+      fuse_reply_buf(req, file_data.c_str(), strlen(file_data.c_str()));
+    }
+  }
+  else
+    fuse_reply_err(req, ENOSYS);
 }
 
 void
@@ -119,12 +190,88 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
   const char *buf, size_t size, off_t off,
   struct fuse_file_info *fi)
 {
+
   // You fill this in
-#if 0
-  fuse_reply_write(req, bytes_written);
-#else
-  fuse_reply_err(req, ENOSYS);
-#endif
+
+  //<david>
+
+  printf("\n\n-------------------------------------\n\n");
+  printf("\n\nFUSE WRITE function *buf parameter:\n\n%s\n\n", buf);
+
+  if(yfs->isfile(ino))
+  {
+    std::string file_data;
+    yfs->file_content(ino, file_data);
+
+    printf("File content res: %s\n", file_data.c_str());
+    printf("off: %d\nsize: %d\nfile_data_size: %d\n", off, size, file_data.size());
+
+    if((off + size) > (file_data.size())) //append
+    {
+
+    	printf("APPEND\n\n");
+
+      std::string new_content;
+      yfs->file_content(ino, new_content);
+      new_content = new_content.substr(0, off);
+      new_content += std::string(buf).substr(0, size);
+      yfs->modify_file(ino, new_content);
+
+      printf("\n\n-------------------------------------\n\n");
+      fuse_reply_write(req, strlen(buf));
+    }
+    else
+    {
+
+    	if((off == 0) && (size < file_data.size())) { //when content is erased
+    		printf("CONTENT ERASED\n\n");
+
+    		std::string writen(buf);
+		    file_data.replace(off, size, writen);
+		    file_data = file_data.substr(0, size);
+		    yfs->modify_file(ino, file_data);
+
+		    printf("\n\n-------------------------------------\n\n");
+		    fuse_reply_write(req, strlen(buf));
+    	} else {									//write in middle of file
+    		printf("MIDDLE\n\n");
+
+    		  std::string old_content;
+    		  std::string new_content;
+
+		      yfs->file_content(ino, old_content);
+		      new_content = old_content.substr(0, off);
+		      new_content += std::string(buf).substr(0, size);
+
+		      yfs->file_content(ino, old_content);
+		      int len = old_content.size();
+
+		      new_content += old_content.substr(off + size, len);
+		      yfs->modify_file(ino, new_content);
+
+		      printf("\n\n-------------------------------------\n\n");
+		      fuse_reply_write(req, strlen(buf));
+
+//    		std::string writen(buf);
+//		    /*luis*/file_data.replace(off, size, writen);
+//		    /*david*///file_data.replace(off, size, writen, off + 1, size);
+//		    yfs->modify_file(ino, file_data);
+
+//		    printf("\n\n-------------------------------------\n\n");
+//		    fuse_reply_write(req, strlen(buf));
+    	}
+
+//      std::string writen(buf);
+//      file_data.replace(off, size, writen);
+//      file_data = file_data.substr(0, size);
+//      yfs->modify_file(ino, file_data);
+
+//      fuse_reply_write(req, strlen(buf));
+    }
+  }
+  else
+    fuse_reply_err(req, ENOSYS);
+
 }
 
 yfs_client::status
@@ -268,11 +415,10 @@ fuseserver_open(fuse_req_t req, fuse_ino_t ino,
      struct fuse_file_info *fi)
 {
   // You fill this in
-#if 1
+
+  if(!yfs->isfile(ino))
+    fuse_reply_err(req, ENOSYS);
   fuse_reply_open(req, fi);
-#else
-  fuse_reply_err(req, ENOSYS);
-#endif
 }
 
 void

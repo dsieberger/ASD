@@ -99,6 +99,23 @@ yfs_client::setSize(inum id, int newSize)
 
   int r = OK;
 
+  std::string content;
+  file_content(id, content);
+
+  if(content.size() > newSize && newSize >= 0)
+  {
+    content = content.substr(0, newSize);
+  }
+  else
+  {
+    for(int i = newSize; i > content.size(); i--)
+    {
+      content += " ";
+    }
+  }
+
+
+
   if(ec->setSize(id, newSize) != extent_protocol::OK) {
     r = IOERR; printf("changeSize ERROR");
   }
@@ -123,15 +140,24 @@ yfs_client::newfile(inum parent_id, inum inum, std::string name)
     	r = IOERR; printf("newfile child put IOERR\n");
     	goto release;
     }
+    else
+    {
+      std::string parent_string = res + "\nchild\n" + filename(inum);
+      printf("newfile child extent appended to parent:\n\n%s\n\n", parent_string.c_str());
+    }
   } else {
   	r = IOERR; printf("newfile parent get IOERR\n");
     goto release;
   }
 
-  if(ec->put(inum, s) != extent_protocol::OK) {
+  if(ec->put(inum, s + "\ncontent\n") != extent_protocol::OK) {             //why?
      r = IOERR; printf("newfile child put IOERR\n");
      goto release;
   }
+  else {
+     printf("New file content: %s\n", s.c_str());
+     ec->setSize(inum, 0);
+   }
   
 
   printf("newfile %016llx  OK\n", inum);
@@ -223,6 +249,57 @@ yfs_client::ilookup(inum parent_id, std::string name) {
 
 }
 
+//<david>
+
+int
+yfs_client::file_content(inum num, std::string &content)
+{
+  if(!isfile(num))        //se não for ficheiro, não se pode obter o conteúdo
+    return NOENT;         //retorna "erro"
+  else
+  {
+    std::string sanitized_content;
+    std::string file_data;
+    ec->get(num, file_data);  //caso contrário, guarda o conteúdo do ficheiro no parâmetro 'content'
+
+    std::size_t pos;
+    pos = file_data.find("\ncontent\n") + std::string("\ncontent\n").size();    //encontrar o 'header' no extent que declara o início do conteúdo
+    content = file_data.substr(pos);                                  //guardar no parâmetro e retornar OK
+
+  }
+
+  return OK;              //retorna código de sucesso
+}
+
+int
+yfs_client::modify_file(inum num, std::string content)
+{
+
+  printf("\n\n-------------------------------------\n\n");
+  printf("MODIFY FILE CALLED:\n\n %s\n\n", content.c_str());
+
+  if(!isfile(num))        //se não for ficheiro, não se pode obter o conteúdo
+    return NOENT;         //retorna "erro"
+  else
+  {
+    std::string extent;
+    ec->get(num, extent);
+
+    std::size_t header_end_pos;
+    header_end_pos = extent.find("\ncontent\n") + std::string("\ncontent\n").size();
+    extent = extent.substr(0, header_end_pos);
+    extent += content;
+    ec->put(num, extent);  //caso contrário, modifica o conteúdo do ficheiro com o parâmetro 'content'
+    ec->setSize(num, content.size());
+
+    printf("modify content size: %d\n", content.size());
+    printf("\n\n-------------------------------------");
+  }
+
+  return OK;              //retorna código de sucesso
+}
+
+//</david>
 
 std::map<yfs_client::inum, std::string>
 yfs_client::listdir(inum num) {
