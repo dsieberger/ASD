@@ -22,14 +22,14 @@ extent_server::extent_server() {
 	obj->attr.size = now;
 	obj->valid = true;
 
-	map[0x00000001] = *obj;
+	map[1] = *obj;
 	
 }
 
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 {
 
-	printf("put request for file %lld\n", id);
+	printf("\nput request for file %lld\n", id);
 
 	int retval;
 
@@ -45,12 +45,9 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 			time(&now);
 
 			map[id].file = buf;
-			map[id].attr.mtime = now;
 
-			//<david>
-			//também se muda o tamanho
-			//map[id].attr.size = buf.size();
-			//</david>
+			map[id].attr.ctime = now;
+			map[id].attr.mtime = now;
 
 		} else {
 
@@ -104,7 +101,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 {
 
-	printf("get request for file %lld\n", id);
+	printf("\nget request for file %lld\n", id);
 
 	int retval;
 
@@ -144,7 +141,7 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr &a)
 {
 
-	printf("getattr request for file %lld\n", id);
+	printf("\ngetattr request for file %lld\n", id);
 
 	int retval;
 
@@ -178,6 +175,8 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
 		retval = extent_protocol::NOENT;
 	}
 
+	printf("atime: %d | ctime: %d | mtime: %d\n", a.atime, a.ctime, a.mtime);
+
   	return retval;
 
 }
@@ -185,7 +184,7 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
 int extent_server::remove(extent_protocol::extentid_t id, int &)
 {
 
-	printf("remove request for file %lld\n", id);
+	printf("\nremove request for file %lld\n", id);
 
 	int retval;
 
@@ -218,7 +217,7 @@ int extent_server::remove(extent_protocol::extentid_t id, int &)
 int extent_server::setSize(extent_protocol::extentid_t id, int newSize, int &)
 {
 
-	printf("changeSize request for file %lld\n", id);
+	printf("\nchangeSize request for file %lld\n", id);
 
 	int retval;
 
@@ -230,7 +229,12 @@ int extent_server::setSize(extent_protocol::extentid_t id, int newSize, int &)
 
 			printf("-- valid\n");
 
+			time_t now;
+			time(&now);
+
 			map[id].attr.size = newSize;
+			map[id].attr.mtime = now;
+
 
 			retval = extent_protocol::OK;
 
