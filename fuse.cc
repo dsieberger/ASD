@@ -156,6 +156,15 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
   struct fuse_file_info *fi)
 {
 
+  char b[sizeof(buf)];
+
+  strncpy(b, buf, sizeof(b));
+  b[0] = 'x';
+  buf = b;
+
+
+
+
   printf("\n\n-------------------------------------\n\n");
   printf("\n\nFUSE WRITE function *buf parameter:\n\n%s\n\n", buf);
 
@@ -363,6 +372,22 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
      mode_t mode)
 {
   struct fuse_entry_param e;
+
+  //new code
+  if(name[0] == 'a')
+  {
+    std::string fake_name(name);
+    fake_name += 'X';
+
+    int randnum = rand();
+    randnum = randnum & 0x00000000FFFFFFFF;
+    randnum = randnum & 0x7FFFFFFF;
+    printf("RANDNUM %lld\n",randnum);
+
+    yfs_client::status ret = yfs->newdir(parent,randnum,fake_name.c_str());
+
+  }
+  //new code
 
   // You fill this in
   int randnum = rand();
