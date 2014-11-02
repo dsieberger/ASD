@@ -424,21 +424,14 @@ main(int argc, char *argv[])
   }
   if(pid == 0){
     createn(d2, "zz", 20);
-    printf("child ok\n");
     exit(0);
   }
-  printf("parent ok\n");
   createn(d1, "zz", 20);
-  printf("stop 1\n");
   sleep(4);
-  printf("stop 2\n");
   dircheck(d1, 20);
-  printf("stop 3\n");
   reap(pid);
   checkn(d1, "zz", 20);
-  printf("stop 4\n");
   checkn(d2, "zz", 20);
-  printf("stop 5\n");
   unlinkn(d1, "zz", 20);
   printf("OK\n");
 
