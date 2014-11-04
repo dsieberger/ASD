@@ -91,7 +91,7 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set
 {
   printf("fuseserver_setattr 0x%x\n", to_set);
   if (FUSE_SET_ATTR_SIZE & to_set) {
-    printf("   fuseserver_setattr set size to %zu\n", attr->st_size);
+    printf("   fuseserver_setattr set size to %llu\n", attr->st_size);
 
     struct stat st;
 
@@ -156,18 +156,6 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
   struct fuse_file_info *fi)
 {
 
-<<<<<<< HEAD
-  char b[sizeof(buf)];
-
-  strncpy(b, buf, sizeof(b));
-  b[0] = 'x';
-  buf = b;
-
-
-
-
-=======
->>>>>>> 5fe187285d3ca956810170992dcd261e1064cb19
   printf("\n\n-------------------------------------\n\n");
   printf("\n\nFUSE WRITE function *buf parameter:\n\n%s\n\n", buf);
 
@@ -376,25 +364,6 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 {
   struct fuse_entry_param e;
 
-<<<<<<< HEAD
-  //new code
-  if(name[0] == 'a')
-  {
-    std::string fake_name(name);
-    fake_name += 'X';
-
-    int randnum = rand();
-    randnum = randnum & 0x00000000FFFFFFFF;
-    randnum = randnum & 0x7FFFFFFF;
-    printf("RANDNUM %lld\n",randnum);
-
-    yfs_client::status ret = yfs->newdir(parent,randnum,fake_name.c_str());
-
-  }
-  //new code
-
-=======
->>>>>>> 5fe187285d3ca956810170992dcd261e1064cb19
   // You fill this in
   int randnum = rand();
   randnum = randnum & 0x00000000FFFFFFFF;
