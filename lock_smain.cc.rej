@@ -1,0 +1,11 @@
+--- lock_smain.cc	2012-10-31 13:11:59.636819845 +0000
++++ lock_smain.cc	2012-10-31 13:47:57.171518639 +0000
+@@ -3,6 +3,8 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include "lock_server.h"
++#include "paxos.h"
++#include "rsm.h"
+ 
+ #include "jsl_log.h"
+ 
