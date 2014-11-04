@@ -85,6 +85,7 @@ proposer::setn()
   my_n.n = acc->get_n_h().n + 1 > my_n.n + 1 ? acc->get_n_h().n + 1 : my_n.n + 1;
 }
 
+//falta implementar o resto
 bool
 proposer::run(int instance, std::vector<std::string> newnodes, std::string newv)
 {
@@ -148,7 +149,7 @@ proposer::prepare(unsigned instance, std::vector<std::string> &accepts,
          std::vector<std::string> nodes,
          std::string &v)
 {
-  return false;
+	
 }
 
 
@@ -156,12 +157,14 @@ void
 proposer::accept(unsigned instance, std::vector<std::string> &accepts,
         std::vector<std::string> nodes, std::string v)
 {
+
 }
 
 void
 proposer::decide(unsigned instance, std::vector<std::string> accepts, 
 	      std::string v)
 {
+
 }
 
 acceptor::acceptor(class paxos_change *_cfg, bool _first, std::string _me, 
@@ -190,22 +193,44 @@ acceptor::acceptor(class paxos_change *_cfg, bool _first, std::string _me,
   pxs->reg(paxos_protocol::decidereq, this, &acceptor::decidereq);
 }
 
+//done?!
 paxos_protocol::status
 acceptor::preparereq(std::string src, paxos_protocol::preparearg a,
     paxos_protocol::prepareres &r)
 {
-  // handle a preparereq message from proposer
-  return paxos_protocol::OK;
+  	// handle a preparereq message from proposer
+	if (a.instance <= instance_h) {
+		r.oldinstance = true;
+		r.accept = false;
+		r.n_a = n_a;
+		r.v_a = values[a.instance];
+	} else if (a.n > n_h) {
+		r.oldinstance = false;
+		r.accept = true;
+		n_h = a.n;
+		r.n_a = n_a;
+		r.v_a = v_a;
+		l->loghigh(n_h);
+	} else {
+		r.oldinstance = false;
+		r.accept = false;
+	}
+	return paxos_protocol::OK;
 
 }
 
+// done?!
 paxos_protocol::status
 acceptor::acceptreq(std::string src, paxos_protocol::acceptarg a, int &r)
 {
 
   // handle an acceptreq message from proposer
-
-  return paxos_protocol::OK;
+	if (a.instance > instance_h && a.n >= n_h) {
+		n_a = a.n;
+		v_a = a.v;
+		l->logprop(n_a, v_a);
+	}
+    return paxos_protocol::OK;
 }
 
 paxos_protocol::status
@@ -213,8 +238,9 @@ acceptor::decidereq(std::string src, paxos_protocol::decidearg a, int &r)
 {
 
   // handle an decide message from proposer
-
-  return paxos_protocol::OK;
+	commit(a.instance, a.v);
+	l->loginstance(a.instance, a.v);
+	return paxos_protocol::OK;
 }
 
 void
