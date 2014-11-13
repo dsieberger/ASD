@@ -233,9 +233,8 @@ rsm::commit_change()
   //<cspr>
 
   set_primary();
-  if (!cfg->ismember(cfg->myaddr())) {
-	pthread_cond_signal(&recovery_cond); //wake up recovery thread
-  }
+  inviewchange = true;
+  pthread_cond_signal(&recovery_cond); //wake up recovery thread
 
   //</cspr>
 
@@ -318,9 +317,11 @@ rsm::joinreq(std::string m, viewstamp last, rsm_protocol::joinres &r)
 
   	//<cspr>
 
-    if(cfg->add(m) == true) {
-      	r.log = cfg->dump();
-	} else {
+    cfg->add(m);
+
+    if(cfg->ismember(m)) {
+    	r.log = cfg->dump();
+    } else {
 		ret = rsm_client_protocol::ERR;
 	}
 

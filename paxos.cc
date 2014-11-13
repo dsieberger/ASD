@@ -76,7 +76,8 @@ proposer::proposer(class paxos_change *_cfg, class acceptor *_acceptor,
     stable (true)
 {
   assert (pthread_mutex_init(&pxs_mutex, NULL) == 0);
-
+  my_n.n = 0;
+  my_n.m = me;
 }
 
 void
@@ -102,13 +103,21 @@ proposer::run(int instance, std::vector<std::string> newnodes, std::string newv)
     pthread_mutex_unlock(&pxs_mutex);
     return false;
   }
-  stable = false; //going to run paxos
+
+  //<cspr>
+
+  stable = false; 	  //going to run paxos
+
+  //</cspr>
+
   setn();
   accepts.clear();
   nodes.clear();
   v.clear();
+
   c_nodes = newnodes; //update new nodes
   c_v = newv;         //update value to propose
+
   nodes = c_nodes;
   if (prepare(instance, accepts, nodes, v)) {
 
@@ -154,38 +163,44 @@ proposer::prepare(unsigned instance, std::vector<std::string> &accepts,
 
   //<cspr>
 
-  std::vector<std::string>::iterator it;
-  prop_t high;
+  prop_t high = { 0, std::string() };
 
-  for (it = nodes.begin(); it != nodes.end(); it++) {
+  for (unsigned it = 0; it < nodes.size(); it++) {
 
-    handle hand(*it);
+    handle hand(nodes[it]);
 
     int ret;
+
     paxos_protocol::preparearg arg;
-    paxos_protocol::prepareres resp;
     arg.n = my_n;
     arg.instance = instance;
 
-    assert(pthread_mutex_unlock(&pxs_mutex) == 0);
-    ret = hand.get_rpcc()->call(paxos_protocol::preparereq, me, arg, resp, rpcc::to(1000));
-    assert(pthread_mutex_lock(&pxs_mutex) == 0);
+    paxos_protocol::prepareres resp;
 
-    if (ret == paxos_protocol::OK) {
+    if(hand.get_rpcc()) {
+      rpcc *rpc = hand.get_rpcc();
+      pthread_mutex_unlock(&pxs_mutex);
+      ret = rpc->call(paxos_protocol::preparereq, me, arg, resp, rpcc::to(1000));
+      pthread_mutex_lock(&pxs_mutex);
 
-      if (resp.oldinstance == false) {
+      if (ret == paxos_protocol::OK) {
 
-        if (resp.accept) {
-          accepts.push_back(*it);
+        if (resp.oldinstance) {
+
+        	acc->commit(instance, resp.v_a);
+          return false;
+
+        } else if (resp.accept) {
+          
+        	if ((resp.v_a.size() > 0) && (resp.n_a > high)) {
+            high = resp.n_a;
+            v = resp.v_a;
+          }
+
+          accepts.push_back(nodes[it]);
+
         }
 
-        if (high.m.size() == 0 || resp.n_a > high) {
-          high = resp.n_a;
-          v = resp.v_a;
-        }
-
-      } else {
-        acc->commit(instance, resp.v_a);
       }
 
     }
@@ -203,32 +218,39 @@ proposer::accept(unsigned instance, std::vector<std::string> &accepts,
         std::vector<std::string> nodes, std::string v)
 {
 
-  std::vector<std::string>::iterator it;
+  //<cspr>
 
-  for (it = nodes.begin(); it != nodes.end(); it++) {
+  for (unsigned it = 0; it < nodes.size(); it++) {
 
-    handle hand(*it);
+    handle hand(nodes[it]);
 
-    int r_arg;
     int r;
+    int r_arg;
+
     paxos_protocol::acceptarg arg;
     arg.instance = instance;
     arg.n = my_n;
     arg.v = v;
 
-    assert(pthread_mutex_unlock(&pxs_mutex) == 0);
-    r = hand.get_rpcc()->call(paxos_protocol::acceptreq, me, arg, r_arg, rpcc::to(1000));
-    assert(pthread_mutex_lock(&pxs_mutex) == 0);
+    if(hand.get_rpcc()) {
+      rpcc *rpc = hand.get_rpcc();
+      pthread_mutex_unlock(&pxs_mutex);
+      r = rpc->call(paxos_protocol::acceptreq, me, arg, r_arg, rpcc::to(1000));
+      pthread_mutex_lock(&pxs_mutex);
 
-    if (r == paxos_protocol::OK) {
+      if (r == paxos_protocol::OK) {
 
-      if (r_arg) {
-        accepts.push_back(*it);
+        if (r_arg == 1) {
+          accepts.push_back(nodes[it]);
+        }
+
       }
 
     }
 
   }
+
+  //</cspr>
 
 }
 
@@ -237,21 +259,28 @@ proposer::decide(unsigned instance, std::vector<std::string> accepts,
 	      std::string v)
 {
 
-  std::vector<std::string>::iterator it;
+  //<cspr>
 
-  for (it = accepts.begin(); it != accepts.end(); it++) {
+  for (unsigned it = 0; it < accepts.size(); it++) {
 
-    handle hand(*it);
+    handle hand(accepts[it]);
 
-    int r_arg;
+    int decoy;
+
     paxos_protocol::decidearg arg;
     arg.instance = instance;
     arg.v = v;
-    assert(pthread_mutex_unlock(&pxs_mutex) == 0);
-    hand.get_rpcc()->call(paxos_protocol::decidereq, me, arg, r_arg, rpcc::to(1000));
-    assert(pthread_mutex_lock(&pxs_mutex) == 0);
+
+    if(hand.get_rpcc()) {
+      rpcc *rpc = hand.get_rpcc();
+      pthread_mutex_unlock(&pxs_mutex);
+      rpc->call(paxos_protocol::decidereq, me, arg, decoy, rpcc::to(1000));
+      pthread_mutex_lock(&pxs_mutex);
+    }
 
   }
+
+  //</cspr>
 
 }
 
@@ -289,26 +318,34 @@ acceptor::preparereq(std::string src, paxos_protocol::preparearg a,
 
   //<cspr>
 
+  pthread_mutex_lock(&pxs_mutex);
+
   if (a.instance <= instance_h) {
 
-    r.oldinstance = true;
-    r.v_a = value(a.instance);
+    r.oldinstance = 1;
+    r.accept = 0;
+    r.n_a = n_a;
+    r.v_a = values[a.instance];
 
   } else if (a.n > n_h) {
 
-    r.oldinstance = false;
-    r.accept = true;
+    r.oldinstance = 0;
+    r.accept = 1;
     n_h = a.n;
-    printf("n = %d, m = %s", n_h.n, n_h.m.c_str());
     r.n_a = n_a;
     r.v_a = v_a;
+    l->loghigh(n_h);
 
   } else {
 
-    r.oldinstance = false;
-    r.accept = false;
+    r.oldinstance = 0;
+    r.accept = 0;
+    r.n_a = n_a;
+    r.v_a = v_a;
 
   }
+
+  pthread_mutex_unlock(&pxs_mutex);
 
   //</cspr>
 
@@ -324,14 +361,17 @@ acceptor::acceptreq(std::string src, paxos_protocol::acceptarg a, int &r)
 
   //<cspr>
 
+  pthread_mutex_lock(&pxs_mutex);
+
   r = 0;
   if((a.instance > instance_h) && (a.n >= n_h)) {
     n_a = a.n;
     v_a = a.v;
+    l->logprop(n_a, v_a);
     r = 1;
-  } else {
-    return paxos_protocol::ERR;
   }
+
+  pthread_mutex_unlock(&pxs_mutex);
 
   //</cspr>
 
